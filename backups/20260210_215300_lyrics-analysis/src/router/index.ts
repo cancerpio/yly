@@ -7,19 +7,19 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Home.vue')
   },
   {
-    path: '/analyze',
-    name: 'Analysis',
-    component: () => import('../views/Analysis.vue')
+    path: '/search',
+    name: 'Search',
+    component: () => import('../views/SearchResults.vue')
   },
   {
-    path: '/playlists', // Kept as 'playlists' path to match Nav, but conceptually 'Saved List'
+    path: '/song/:id',
+    name: 'SongDetail',
+    component: () => import('../views/SongDetail.vue')
+  },
+  {
+    path: '/playlists',
     name: 'Playlists',
     component: () => import('../views/Playlists.vue')
-  },
-  {
-    path: '/playlist/:id',
-    name: 'PlaylistDetail',
-    component: () => import('../views/PlaylistDetail.vue')
   },
   {
     path: '/settings',

@@ -25,16 +25,6 @@ const startAnalysis = () => {
       </div>
 
       <div class="input-area">
-        <div class="title-input-wrapper">
-          <label class="input-label">Title / Song Name</label>
-          <input 
-            v-model="contentStore.currentTitle"
-            type="text" 
-            placeholder="輸入歌名 (例如: AIZO)..."
-            class="title-input glass-input"
-          />
-        </div>
-
         <textarea 
           v-model="contentStore.rawText"
           placeholder="輸入文章段落或歌詞..."
@@ -145,38 +135,4 @@ const startAnalysis = () => {
 .analyze-btn:active {
   transform: translateY(0);
 }
-
-.title-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: left;
-}
-
-.input-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text-sub);
-  margin-left: 4px;
-}
-
-.title-input {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.5);
-  font-family: inherit;
-  font-size: 1rem;
-  color: var(--color-text-main);
-  transition: all 0.3s ease;
-}
-
-.title-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
 </style>
