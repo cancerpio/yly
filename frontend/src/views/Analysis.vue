@@ -23,31 +23,52 @@ const showTooltip = ref(false);
 const tooltipPosition = ref({ x: 0, y: 0 });
 const currentSelection = ref<AnalyzedSegment | null>(null);
 
+
+let debounceTimer: ReturnType<typeof setTimeout>;
+
 onMounted(() => {
   if (!contentStore.rawText) {
     router.replace('/');
     return;
   }
   lines.value = contentStore.rawText.split('\n');
-  document.addEventListener('mouseup', handleSelection);
-  document.addEventListener('touchend', handleSelection); // Support mobile selection
+  document.addEventListener('selectionchange', handleSelectionChange);
+  document.addEventListener('mousedown', handleOutsideClick);
+  document.addEventListener('touchstart', handleOutsideClick);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('mouseup', handleSelection);
-  document.removeEventListener('touchend', handleSelection);
+  document.removeEventListener('selectionchange', handleSelectionChange);
+  document.removeEventListener('mousedown', handleOutsideClick);
+  document.removeEventListener('touchstart', handleOutsideClick);
+  clearTimeout(debounceTimer);
 });
 
-const handleSelection = (event: Event) => {
-  // Add a small delay for touch devices to let the selection settle
-  setTimeout(() => {
+const handleOutsideClick = (event: Event) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.selection-tooltip') && showTooltip.value) {
+        // If clicking outside, clear selection and hide tooltip
+        const selection = window.getSelection();
+        if (selection && !containerRef.value?.contains(selection.anchorNode)) {
+           // Only hide if click is outside our container too
+             showTooltip.value = false;
+        }
+    }
+};
+
+const handleSelectionChange = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    processSelection();
+  }, 600); // Longer delay for mobile selection handlers to finish
+};
+
+const processSelection = () => {
     const selection = window.getSelection();
+    
+    // Basic validation
     if (!containerRef.value || !selection || selection.isCollapsed) {
-      // Only close if clicking outside while tooltip is open
-      const target = event.target as HTMLElement;
-      if (!target.closest('.selection-tooltip')) {
-          showTooltip.value = false;
-      }
+      if (!showTooltip.value) return; // Don't hide immediately if tooltip is open to avoid flickering
       return;
     }
 
@@ -57,23 +78,33 @@ const handleSelection = (event: Event) => {
     }
 
     const selectedText = selection.toString().trim();
-    if (!selectedText) return;
+    if (!selectedText) {
+        showTooltip.value = false;
+        return;
+    }
 
     // Analyze content
     currentSelection.value = contentStore.analyzeSelection(selectedText);
 
     // Calculate position
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    
-    // Position tooltip above the selection
-    tooltipPosition.value = {
-      x: rect.left + (rect.width / 2),
-      y: rect.top - 10
-    };
-    
-    showTooltip.value = true;
-  }, 10);
+    try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        // Ensure rect is valid
+        if (rect.width === 0 && rect.height === 0) return;
+
+        // Position tooltip above the selection
+        // Add scroll offset validation if needed, but fixed position usually handles viewport relative
+        tooltipPosition.value = {
+            x: rect.left + (rect.width / 2),
+            y: rect.top - 10
+        };
+        
+        showTooltip.value = true;
+    } catch (e) {
+        console.error("Selection range error", e);
+    }
 };
 
 const saveCurrentSelection = () => {
