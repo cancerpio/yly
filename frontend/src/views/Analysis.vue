@@ -57,30 +57,42 @@ const handleOutsideClick = (event: Event) => {
 };
 
 const hasSelection = ref(false); // New state for FAB visibility
+const cachedText = ref(""); // Cache text because mobile selection might be cleared on button click
 
 const handleSelectionChange = () => {
     const selection = window.getSelection();
-    if (selection && !selection.isCollapsed && selection.toString().trim()) {
-       // Check if inside container
-       if (containerRef.value && containerRef.value.contains(selection.anchorNode)) {
-           hasSelection.value = true;
-           return;
+    if (selection && !selection.isCollapsed) {
+       const text = selection.toString().trim();
+       if (text) {
+           // Check if inside container
+           if (containerRef.value && containerRef.value.contains(selection.anchorNode)) {
+               hasSelection.value = true;
+               cachedText.value = text;
+               return;
+           }
        }
     }
     hasSelection.value = false;
+    // Don't clear cachedText immediately here, as we might need it for the button click
+    // But we should be careful not to use stale text. 
+    // Actually, if hasSelection becomes false, we hide the button anyway.
 };
 
 const performAnalysis = async () => {
     try {
-        const selection = window.getSelection();
-        const text = selection?.toString().trim();
+        // Use cached text if available, otherwise try getSelection
+        const text = cachedText.value || window.getSelection()?.toString().trim();
         
         if (text) {
             contentStore.isTranslating = true;
-            // Calculate position for tooltip
-            const range = selection?.getRangeAt(0);
-            const rect = range?.getBoundingClientRect();
             
+            // Try to get rect for positioning, even if selection is gone
+            let rect: DOMRect | undefined;
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                 rect = selection.getRangeAt(0).getBoundingClientRect();
+            }
+
             // Check if mobile (width < 768px) or invalid rect, force center
             const isMobile = window.innerWidth < 768;
             
@@ -90,9 +102,6 @@ const performAnalysis = async () => {
                     y: rect.top - 10
                 };
             } else {
-                 // Fallback center (Handled by CSS class .centered-tooltip usually, or inline style)
-                 // Here we set a flag or special coordinates to indicate centering
-                 // For now, let's use viewport center coordinates
                  tooltipPosition.value = {
                     x: window.innerWidth / 2,
                     y: window.innerHeight / 2
@@ -104,6 +113,12 @@ const performAnalysis = async () => {
             // Perform analysis
             currentSelection.value = await contentStore.analyzeSelection(text);
             showTooltip.value = true;
+            
+            // Clear selection properly
+            window.getSelection()?.removeAllRanges();
+            cachedText.value = ""; 
+        } else {
+            alert("No text selected or selection lost.");
         }
     } catch (e: any) {
         alert("分析發生錯誤: " + (e.message || e));
