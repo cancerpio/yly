@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, Save, X, Info } from 'lucide-vue-next';
+import { ArrowLeft, Save, X, Info, Search } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
 import { SONG_METADATA, type AnalyzedSegment } from '../data/mockData';
 
@@ -24,7 +24,7 @@ const tooltipPosition = ref({ x: 0, y: 0 });
 const currentSelection = ref<AnalyzedSegment | null>(null);
 
 
-let debounceTimer: ReturnType<typeof setTimeout>;
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 onMounted(() => {
   if (!contentStore.rawText) {
@@ -56,54 +56,46 @@ const handleOutsideClick = (event: Event) => {
     }
 };
 
+const hasSelection = ref(false); // New state for FAB visibility
+
 const handleSelectionChange = () => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    processSelection();
-  }, 600); // Longer delay for mobile selection handlers to finish
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed && selection.toString().trim()) {
+       // Check if inside container
+       if (containerRef.value && containerRef.value.contains(selection.anchorNode)) {
+           hasSelection.value = true;
+           return;
+       }
+    }
+    hasSelection.value = false;
 };
 
-const processSelection = () => {
+const performAnalysis = async () => {
     const selection = window.getSelection();
+    const text = selection?.toString().trim();
     
-    // Basic validation
-    if (!containerRef.value || !selection || selection.isCollapsed) {
-      if (!showTooltip.value) return; // Don't hide immediately if tooltip is open to avoid flickering
-      return;
-    }
-
-    // Check if selection is within our container
-    if (!containerRef.value.contains(selection.anchorNode)) {
-      return;
-    }
-
-    const selectedText = selection.toString().trim();
-    if (!selectedText) {
-        showTooltip.value = false;
-        return;
-    }
-
-    // Analyze content
-    currentSelection.value = contentStore.analyzeSelection(selectedText);
-
-    // Calculate position
-    try {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+    if (text) {
+        // Calculate position for tooltip (center of screen or selection)
+        // For simplicity on mobile with FAB, we can center the modal/tooltip
+        const range = selection?.getRangeAt(0);
+        const rect = range?.getBoundingClientRect();
         
-        // Ensure rect is valid
-        if (rect.width === 0 && rect.height === 0) return;
+        if (rect) {
+             tooltipPosition.value = {
+                x: rect.left + (rect.width / 2),
+                y: rect.top - 10
+            };
+        } else {
+             // Fallback center
+             tooltipPosition.value = {
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2
+             };
+        }
 
-        // Position tooltip above the selection
-        // Add scroll offset validation if needed, but fixed position usually handles viewport relative
-        tooltipPosition.value = {
-            x: rect.left + (rect.width / 2),
-            y: rect.top - 10
-        };
-        
+        hasSelection.value = false; // Hide FAB
+        currentSelection.value = await contentStore.analyzeSelection(text);
         showTooltip.value = true;
-    } catch (e) {
-        console.error("Selection range error", e);
     }
 };
 
@@ -150,6 +142,22 @@ const goBack = () => {
       <div v-for="(line, index) in lines" :key="index" class="lyric-line">
         {{ line }}
       </div>
+    </div>
+
+    <!-- Floating Action Button for Analysis -->
+    <div v-if="hasSelection" class="fab-container">
+        <button class="fab-btn" @click="performAnalysis">
+            <Search :size="20" />
+            <span>分析選取</span>
+        </button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="contentStore.isTranslating" class="loading-overlay">
+        <div class="glass-card loading-card">
+            <div class="spinner"></div>
+            <p>正在翻譯...</p>
+        </div>
     </div>
 
     <!-- Floating Tooltip -->
@@ -360,6 +368,73 @@ const goBack = () => {
 .text-val {
   font-size: 0.95rem;
   color: var(--color-text-main);
+}
+
+
+/* FAB Styles */
+.fab-container {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 900;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.fab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--color-text-main);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fab-btn:active {
+    transform: scale(0.95);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(2px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-width: 200px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-top-color: var(--color-text-main);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .save-btn {

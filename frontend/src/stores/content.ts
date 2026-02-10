@@ -8,6 +8,7 @@ export const useContentStore = defineStore('content', () => {
     const currentTitle = ref("AIZO");
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
+    const isTranslating = ref(false);
 
     // Initialize from localStorage
     const init = () => {
@@ -31,30 +32,42 @@ export const useContentStore = defineStore('content', () => {
         currentTitle.value = title || "Untitled";
     };
 
-    const analyzeSelection = (text: string): AnalyzedSegment => {
+    const analyzeSelection = async (text: string): Promise<AnalyzedSegment> => {
         const trimmed = text.trim();
+        if (!trimmed) throw new Error("Empty selection");
 
-        // 1. Exact match
+        // 1. Check local cache (Mock Database) first
         if (LYRICS_DATABASE[trimmed]) {
             return LYRICS_DATABASE[trimmed];
         }
 
-        // 2. Fuzzy match (Simple inclusion check)
-        // Find if a key in database is contained in the selection OR selection contains the key
-        const foundKey = Object.keys(LYRICS_DATABASE).find(key =>
-            key.includes(trimmed) || trimmed.includes(key)
-        );
+        // 2. Fetch from API
+        isTranslating.value = true;
+        try {
+            // MyMemory API (Free, Anonymous)
+            // Note: For production use, get an API key and pair.
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=ja|zh-TW`);
+            const data = await response.json();
 
-        if (foundKey) {
-            return LYRICS_DATABASE[foundKey]!;
+            if (data.responseStatus === 200) {
+                return {
+                    original: trimmed,
+                    pronunciation: "Pending... (需要字典檔)", // Placeholder for now
+                    translation: data.responseData.translatedText
+                };
+            } else {
+                throw new Error(data.responseDetails || "Translation failed");
+            }
+        } catch (error) {
+            console.error("Translation error:", error);
+            return {
+                original: trimmed,
+                pronunciation: "Error",
+                translation: "翻譯失敗，請檢查網路連線"
+            };
+        } finally {
+            isTranslating.value = false;
         }
-
-        // Fallback for unknown text
-        return {
-            original: trimmed,
-            pronunciation: 'Unknown pronunciation',
-            translation: '尚未收錄此翻譯'
-        };
     };
 
     const saveSegment = (segment: AnalyzedSegment) => {
@@ -90,6 +103,7 @@ export const useContentStore = defineStore('content', () => {
         rawText,
         currentTitle,
         playlists,
+        isTranslating,
         init,
         setRawText,
         setCurrentTitle,
