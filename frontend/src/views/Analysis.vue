@@ -71,31 +71,45 @@ const handleSelectionChange = () => {
 };
 
 const performAnalysis = async () => {
-    const selection = window.getSelection();
-    const text = selection?.toString().trim();
-    
-    if (text) {
-        // Calculate position for tooltip (center of screen or selection)
-        // For simplicity on mobile with FAB, we can center the modal/tooltip
-        const range = selection?.getRangeAt(0);
-        const rect = range?.getBoundingClientRect();
+    try {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim();
         
-        if (rect) {
-             tooltipPosition.value = {
-                x: rect.left + (rect.width / 2),
-                y: rect.top - 10
-            };
-        } else {
-             // Fallback center
-             tooltipPosition.value = {
-                x: window.innerWidth / 2,
-                y: window.innerHeight / 2
-             };
-        }
+        if (text) {
+            contentStore.isTranslating = true;
+            // Calculate position for tooltip
+            const range = selection?.getRangeAt(0);
+            const rect = range?.getBoundingClientRect();
+            
+            // Check if mobile (width < 768px) or invalid rect, force center
+            const isMobile = window.innerWidth < 768;
+            
+            if (!isMobile && rect && rect.width > 0) {
+                 tooltipPosition.value = {
+                    x: rect.left + (rect.width / 2),
+                    y: rect.top - 10
+                };
+            } else {
+                 // Fallback center (Handled by CSS class .centered-tooltip usually, or inline style)
+                 // Here we set a flag or special coordinates to indicate centering
+                 // For now, let's use viewport center coordinates
+                 tooltipPosition.value = {
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2
+                 };
+            }
 
-        hasSelection.value = false; // Hide FAB
-        currentSelection.value = await contentStore.analyzeSelection(text);
-        showTooltip.value = true;
+            hasSelection.value = false; // Hide FAB
+            
+            // Perform analysis
+            currentSelection.value = await contentStore.analyzeSelection(text);
+            showTooltip.value = true;
+        }
+    } catch (e: any) {
+        alert("分析發生錯誤: " + (e.message || e));
+        console.error(e);
+    } finally {
+        contentStore.isTranslating = false;
     }
 };
 
