@@ -30,44 +30,50 @@ onMounted(() => {
   }
   lines.value = contentStore.rawText.split('\n');
   document.addEventListener('mouseup', handleSelection);
+  document.addEventListener('touchend', handleSelection); // Support mobile selection
 });
 
 onUnmounted(() => {
   document.removeEventListener('mouseup', handleSelection);
+  document.removeEventListener('touchend', handleSelection);
 });
 
-const handleSelection = (event: MouseEvent) => {
-  const selection = window.getSelection();
-  if (!containerRef.value || !selection || selection.isCollapsed) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.selection-tooltip')) {
-        showTooltip.value = false;
+const handleSelection = (event: Event) => {
+  // Add a small delay for touch devices to let the selection settle
+  setTimeout(() => {
+    const selection = window.getSelection();
+    if (!containerRef.value || !selection || selection.isCollapsed) {
+      // Only close if clicking outside while tooltip is open
+      const target = event.target as HTMLElement;
+      if (!target.closest('.selection-tooltip')) {
+          showTooltip.value = false;
+      }
+      return;
     }
-    return;
-  }
 
-  // Check if selection is within our container
-  if (!containerRef.value.contains(selection.anchorNode)) {
-    return;
-  }
+    // Check if selection is within our container
+    if (!containerRef.value.contains(selection.anchorNode)) {
+      return;
+    }
 
-  const selectedText = selection.toString().trim();
-  if (!selectedText) return;
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return;
 
-  // Analyze content
-  currentSelection.value = contentStore.analyzeSelection(selectedText);
+    // Analyze content
+    currentSelection.value = contentStore.analyzeSelection(selectedText);
 
-  // Calculate position
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  
-  // Position tooltip above the selection
-  tooltipPosition.value = {
-    x: rect.left + (rect.width / 2),
-    y: rect.top - 10
-  };
-  
-  showTooltip.value = true;
+    // Calculate position
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    
+    // Position tooltip above the selection
+    tooltipPosition.value = {
+      x: rect.left + (rect.width / 2),
+      y: rect.top - 10
+    };
+    
+    showTooltip.value = true;
+  }, 10);
 };
 
 const saveCurrentSelection = () => {
