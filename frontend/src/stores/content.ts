@@ -27,7 +27,7 @@ export const useContentStore = defineStore('content', () => {
         kuroshiroInitPromise.value = (async () => {
             try {
                 await kuroshiro.init(new KuromojiAnalyzer({
-                    dictPath: "/dict/"
+                    dictPath: import.meta.env.BASE_URL + "dict/"
                 }));
                 isKuroshiroReady.value = true;
                 console.log("Kuroshiro initialized!");
