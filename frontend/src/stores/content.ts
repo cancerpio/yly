@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { DEFAULT_LYRICS, LYRICS_DATABASE, type AnalyzedSegment } from '../data/mockData';
+import { type AnalyzedSegment } from '../data/mockData';
 // @ts-ignore
 import Kuroshiro from '@sglkc/kuroshiro';
 // @ts-ignore
