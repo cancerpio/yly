@@ -26,3 +26,4 @@ build/
 
 # Agent
 .agent/
+node_modules/_*

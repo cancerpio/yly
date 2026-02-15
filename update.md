@@ -31,6 +31,19 @@
 - `frontend/src/router/index.ts`: 
   - 新增 `/playlist/:id` 路由，對應 `PlaylistDetail` 元件。
 
+### 4. Offline Dictionary & UI Adjustment (2026-02-15)
+- `frontend/public/dict/*`: Imported Kuromoji dictionary files (~17MB).
+- `frontend/src/stores/content.ts`:
+  - Integrated Kuroshiro for offline Japanese tokenization & Romaji conversion.
+  - Implemented parallel execution for translation (API) and pronunciation (local).
+  - Cleared default lyrics and title (now empty by default).
+  - Removed dependency on `LYRICS_DATABASE` mock data for analysis.
+- `frontend/src/views/Home.vue`:
+  - Updated input placeholders to guide user input ("請輸入...").
+- `frontend/vite.config.ts`:
+  - Added `vite-plugin-node-polyfills` to support `path` module for Kuroshiro.
+  - Added custom middleware to serve `.dat.gz` dictionary files correctly as binary streams.
+
 ## 驗收指令與預期結果
 
 ### 測試環境
@@ -63,6 +76,14 @@ cd frontend && npm run dev
      - 點擊刪除按鈕可移除單筆資料。
      - 回到列表頁，點擊資料夾旁的垃圾桶可刪除整個清單。
 
+4. **離線與自訂輸入測試**
+   - **指令**: 重整首頁，確認標題與內容為空。
+   - **指令**: 輸入任意日文與標題，點擊分析。
+   - **預期**: 
+     - 應該能正常看到羅馬拼音 (Romaji) 與翻譯，不應顯示錯誤。
+     - 分析結果應使用實際 API 與 Kuroshiro 運算，而非 Mock 資料。
+
 ## 失敗排除
 - 如果舊資料導致錯誤，嘗試清除瀏覽器 `localStorage` (Key: `playlists`)。
 - 如果 "SavedList" 相關路由報錯，確認是否已清除舊的 `SavedList.vue` 引用 (目前已做相容處理)。
+- 如果 Kuroshiro 報錯 `invalid file signature`，請確認 `vite.config.ts` 中的 middleware 是否正確認設定。

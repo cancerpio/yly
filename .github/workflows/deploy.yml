@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master, mini-app] # Trigger on your current branch too
+    branches: [main, master, mini-app, feat/implement-translation-segment-by-kuroshiro-Kuromoji] # Trigger on your current branch too
   workflow_dispatch:
 
 permissions:
