@@ -38,6 +38,45 @@
 - **iTunes API 限制**：若 API 回應過慢或失敗，系統會回退到隨機命名，但 console 可能會顯示錯誤。
 - **CORS 問題**：瀏覽器可能會阻擋對 iTunes API 的請求。若發生此情況，需考慮使用 Backend Proxy (如 Cloud Functions) 或 JSONP (若支援)。目前實作採用直接 fetch，若失敗則會 gracefully fail 落入預設命名。
 
+# Update: 2026-02-16 Smart Collection Naming
+
+## 變更摘要
+
+本次更新實作了「智慧收藏清單命名」功能，當使用者未輸入標題時，系統會自動嘗試辨識歌曲或產生預設名稱。
+
+### 修改檔案
+
+1.  `frontend/src/stores/content.ts`
+    - 新增 `isNaming` 狀態：用於追蹤是否正在進行命名查詢。
+    - 新增 `identifySource` 函數：使用 iTunes Search API 根據歌詞片段查詢歌名。
+    - 修改 `saveSegment` 為異步函數：加入三階段命名邏輯（使用者輸入 -> API 辨識 -> 隨機預設）。
+
+2.  `frontend/src/views/Analysis.vue`
+    - 更新 `saveCurrentSelection` 為異步調用。
+    - 在儲存按鈕上新增 Loading 狀態 (`isNaming` check) 與 `Loader2` icon。
+
+## 驗收指令與預期結果
+
+1.  **情境 A：使用者已輸入標題**
+    - 在首頁輸入標題 "My Favorite Song"。
+    - 進入分析頁面，選取一段歌詞後收藏。
+    - **預期**：收藏清單名稱為 "My Favorite Song"。
+
+2.  **情境 B：自動辨識 (iTunes Search)**
+    - 在首頁**不輸入**標題，貼上知名歌曲的一句歌詞 (例如: "We will we will rock you")。
+    - 進入分析頁面，選取該行歌詞並收藏。
+    - **預期**：按鈕顯示 "Saving..."，隨後收藏成功，且清單名稱自動更新為 "We Will Rock You" (或其他搜尋結果)。
+
+3.  **情境 C：辨識失敗/無結果**
+    - 在首頁**不輸入**標題，貼上隨意文字。
+    - 進入分析頁面，選取並收藏。
+    - **預期**：按鈕顯示 "Saving..."，隨後收藏成功，清單名稱為 "隨機收藏 YYYY-MM-DD HH:mm"。
+
+## 若失敗最可能的原因與修正方向
+
+- **iTunes API 限制**：若 API 回應過慢或失敗，系統會回退到隨機命名，但 console 可能會顯示錯誤。
+- **CORS 問題**：瀏覽器可能會阻擋對 iTunes API 的請求。若發生此情況，需考慮使用 Backend Proxy (如 Cloud Functions) 或 JSONP (若支援)。目前實作採用直接 fetch，若失敗則會 gracefully fail 落入預設命名。
+
 # Update: 2026-02-16 14:09 - Adjust iTunes Search Language
 
 ## 變更摘要
@@ -61,3 +100,30 @@
 ## 若失敗最可能的原因與修正方向
 
 - **參數無效**：若某些歌曲在 JP Store 沒有上架，可能會查無結果，此時會落回隨機命名。
+
+# Update: 2026-02-16 21:15 - Improve iTunes Search Precision
+
+## 變更摘要
+
+為了提升自動命名功能的精確度，優化了 `identifySource` 的搜尋邏輯。除了使用原始輸入進行搜尋外，現在會在失敗時嘗試使用「清理後的字串」或「最長單行」進行二次搜尋。
+
+### 修改檔案
+
+1.  `frontend/src/stores/content.ts`
+    - 將 `fetchiTunes` 請求封裝為獨立函數。
+    - 實作三階段搜尋策略：
+        1.  使用原始字串搜尋 (Raw Query)。
+        2.  若失敗，去除特殊符號與標點後再次搜尋 (Cleaned Query)。
+        3.  若仍失敗且輸入為多行，取最長的一行再次搜尋 (Longest Line)。
+
+## 驗收指令與預期結果
+
+1.  **情境：包含特殊符號的歌詞**
+    - 輸入一段包含複雜標點符號的歌詞。
+    - 收藏。
+    - **預期**：即使原始字串搜尋失敗，系統應能透過清理後的字串找到正確歌名。
+
+2.  **情境：多行歌詞片段**
+    - 輸入包含多行歌詞的段落，其中可能有一行是主要副歌。
+    - 收藏。
+    - **預期**：系統應能嘗試使用最長的一行（通常資訊量較足）找到正確歌名。

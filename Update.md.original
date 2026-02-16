@@ -36,3 +36,66 @@
 
 - **iTunes API 限制**：若 API 回應過慢或失敗，系統會回退到隨機命名，但 console 可能會顯示錯誤。
 - **CORS 問題**：瀏覽器可能會阻擋對 iTunes API 的請求。若發生此情況，需考慮使用 Backend Proxy (如 Cloud Functions) 或 JSONP (若支援)。目前實作採用直接 fetch，若失敗則會 gracefully fail 落入預設命名。
+
+# Update: 2026-02-16 Smart Collection Naming
+
+## 變更摘要
+
+本次更新實作了「智慧收藏清單命名」功能，當使用者未輸入標題時，系統會自動嘗試辨識歌曲或產生預設名稱。
+
+### 修改檔案
+
+1.  `frontend/src/stores/content.ts`
+    - 新增 `isNaming` 狀態：用於追蹤是否正在進行命名查詢。
+    - 新增 `identifySource` 函數：使用 iTunes Search API 根據歌詞片段查詢歌名。
+    - 修改 `saveSegment` 為異步函數：加入三階段命名邏輯（使用者輸入 -> API 辨識 -> 隨機預設）。
+
+2.  `frontend/src/views/Analysis.vue`
+    - 更新 `saveCurrentSelection` 為異步調用。
+    - 在儲存按鈕上新增 Loading 狀態 (`isNaming` check) 與 `Loader2` icon。
+
+## 驗收指令與預期結果
+
+1.  **情境 A：使用者已輸入標題**
+    - 在首頁輸入標題 "My Favorite Song"。
+    - 進入分析頁面，選取一段歌詞後收藏。
+    - **預期**：收藏清單名稱為 "My Favorite Song"。
+
+2.  **情境 B：自動辨識 (iTunes Search)**
+    - 在首頁**不輸入**標題，貼上知名歌曲的一句歌詞 (例如: "We will we will rock you")。
+    - 進入分析頁面，選取該行歌詞並收藏。
+    - **預期**：按鈕顯示 "Saving..."，隨後收藏成功，且清單名稱自動更新為 "We Will Rock You" (或其他搜尋結果)。
+
+3.  **情境 C：辨識失敗/無結果**
+    - 在首頁**不輸入**標題，貼上隨意文字。
+    - 進入分析頁面，選取並收藏。
+    - **預期**：按鈕顯示 "Saving..."，隨後收藏成功，清單名稱為 "隨機收藏 YYYY-MM-DD HH:mm"。
+
+## 若失敗最可能的原因與修正方向
+
+- **iTunes API 限制**：若 API 回應過慢或失敗，系統會回退到隨機命名，但 console 可能會顯示錯誤。
+- **CORS 問題**：瀏覽器可能會阻擋對 iTunes API 的請求。若發生此情況，需考慮使用 Backend Proxy (如 Cloud Functions) 或 JSONP (若支援)。目前實作採用直接 fetch，若失敗則會 gracefully fail 落入預設命名。
+
+# Update: 2026-02-16 14:09 - Adjust iTunes Search Language
+
+## 變更摘要
+
+調整自動命名的 iTunes Search API 參數，強制使用日本地區 (`country=JP`) 與日語 (`lang=ja_jp`)，以確保回傳的歌名為原始日文名稱，而非英文翻譯。
+
+### 修改檔案
+
+1.  `frontend/src/stores/content.ts`
+    - 修改 `identifySource` 函數中的 fetch URL。
+    - 新增 `country=JP` 與 `lang=ja_jp` 參數。
+
+## 驗收指令與預期結果
+
+1.  **情境：自動辨識日文歌曲**
+    - 在首頁不輸入標題。
+    - 貼上一段日文歌詞 (例如 "残酷な天使のテーゼ" 的歌詞)。
+    - 執行收藏。
+    - **預期**：清單名稱應為日文原名 (例如 "残酷な天使のテーゼ")，而非英文譯名 (Cruel Angel's Thesis)。
+
+## 若失敗最可能的原因與修正方向
+
+- **參數無效**：若某些歌曲在 JP Store 沒有上架，可能會查無結果，此時會落回隨機命名。
