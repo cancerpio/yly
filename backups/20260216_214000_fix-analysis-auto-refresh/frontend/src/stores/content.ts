@@ -12,7 +12,6 @@ export const useContentStore = defineStore('content', () => {
     const currentTitle = ref("");
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
-    const lastAnalyzedText = ref("");
     const isTranslating = ref(false);
     const isNaming = ref(false);
 
@@ -214,7 +213,6 @@ export const useContentStore = defineStore('content', () => {
     return {
         rawText,
         currentTitle,
-        lastAnalyzedText,
         playlists,
         isTranslating,
         isNaming,

@@ -37,13 +37,9 @@ onMounted(() => {
   document.addEventListener('mousedown', handleOutsideClick);
   document.addEventListener('touchstart', handleOutsideClick);
 
-  // Auto-identify source if no title OR if text has changed significantly
-  if ((!contentStore.currentTitle && contentStore.rawText) || (contentStore.rawText !== contentStore.lastAnalyzedText)) {
-      // If text changed, clear old title to force re-identify (unless user manually set it? No, assume new text = new song)
-      // But we should only clear if it was auto-generated or if the user expects it. 
-      // Safe bet: if text changed, re-identify.
+  // Auto-identify source if no title
+  if (!contentStore.currentTitle && contentStore.rawText) {
       identifySource();
-      contentStore.lastAnalyzedText = contentStore.rawText;
   }
 });
 

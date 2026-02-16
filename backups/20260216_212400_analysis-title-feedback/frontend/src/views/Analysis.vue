@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, Save, X, Info, Search, Loader2, Edit3 } from 'lucide-vue-next';
+import { ArrowLeft, Save, X, Info, Search, Loader2 } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
 import { SONG_METADATA, type AnalyzedSegment } from '../data/mockData';
 
@@ -22,7 +22,6 @@ const artistName = computed(() => currentMeta.value?.artist || '');
 const showTooltip = ref(false);
 const tooltipPosition = ref({ x: 0, y: 0 });
 const currentSelection = ref<AnalyzedSegment | null>(null);
-const isIdentifying = ref(false);
 
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -36,37 +35,7 @@ onMounted(() => {
   document.addEventListener('selectionchange', handleSelectionChange);
   document.addEventListener('mousedown', handleOutsideClick);
   document.addEventListener('touchstart', handleOutsideClick);
-
-  // Auto-identify source if no title OR if text has changed significantly
-  if ((!contentStore.currentTitle && contentStore.rawText) || (contentStore.rawText !== contentStore.lastAnalyzedText)) {
-      // If text changed, clear old title to force re-identify (unless user manually set it? No, assume new text = new song)
-      // But we should only clear if it was auto-generated or if the user expects it. 
-      // Safe bet: if text changed, re-identify.
-      identifySource();
-      contentStore.lastAnalyzedText = contentStore.rawText;
-  }
 });
-
-const identifySource = async () => {
-    isIdentifying.value = true;
-    try {
-        // Take first 100 chars for identification
-        const query = contentStore.rawText.slice(0, 100);
-        const foundName = await contentStore.identifySource(query);
-        if (foundName) {
-            contentStore.currentTitle = foundName;
-        } else {
-            // Default name if not found
-             const now = new Date();
-             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-             contentStore.currentTitle = `隨機收藏 ${dateStr}`;
-        }
-    } catch (e) {
-        console.error("Auto-identify failed", e);
-    } finally {
-        isIdentifying.value = false;
-    }
-};
 
 onUnmounted(() => {
   document.removeEventListener('selectionchange', handleSelectionChange);
@@ -189,23 +158,6 @@ const goBack = () => {
         <div class="info-text">
             <h3 class="song-title">{{ displayTitle }}</h3>
             <p class="song-artist">{{ artistName }}</p>
-        </div>
-    </div>
-
-    <!-- Editable Title Input -->
-    <div v-else class="title-edit-container glass-panel">
-        <label class="input-label">
-            <span>Collection Name</span>
-            <Loader2 v-if="isIdentifying" :size="14" class="spin-icon" />
-        </label>
-        <div class="input-wrapper">
-            <input 
-                v-model="contentStore.currentTitle" 
-                type="text" 
-                class="title-input" 
-                placeholder="正在辨識歌名..." 
-            />
-            <Edit3 :size="16" class="edit-icon" />
         </div>
     </div>
 
@@ -352,52 +304,6 @@ const goBack = () => {
 .song-artist {
     font-size: 0.9rem;
     color: var(--color-text-sub);
-}
-
-.title-edit-container {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.input-label {
-    font-size: 0.85rem;
-    color: var(--color-text-sub);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.title-input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--color-text-main);
-    padding: 4px 0;
-    padding-right: 24px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    transition: all 0.2s;
-}
-
-.title-input:focus {
-    outline: none;
-    border-bottom-color: var(--color-text-main);
-}
-
-.edit-icon {
-    position: absolute;
-    right: 0;
-    pointer-events: none;
-    opacity: 0.5;
 }
 
 .tip-message {

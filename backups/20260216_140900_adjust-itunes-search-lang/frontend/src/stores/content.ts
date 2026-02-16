@@ -12,7 +12,6 @@ export const useContentStore = defineStore('content', () => {
     const currentTitle = ref("");
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
-    const lastAnalyzedText = ref("");
     const isTranslating = ref(false);
     const isNaming = ref(false);
 
@@ -114,10 +113,12 @@ export const useContentStore = defineStore('content', () => {
         }
     };
 
-    const fetchItunes = async (query: string) => {
+    const identifySource = async (query: string): Promise<string | null> => {
         try {
+            // Use iTunes Search API
+            // Limit query length to avoid URI too long errors
             const term = encodeURIComponent(query.slice(0, 100));
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song`);
             const data = await response.json();
             if (data.results && data.results.length > 0) {
                 return data.results[0].trackName;
@@ -125,40 +126,6 @@ export const useContentStore = defineStore('content', () => {
         } catch (e) {
             console.error("iTunes search failed:", e);
         }
-        return null;
-    };
-
-    const identifySource = async (query: string): Promise<string | null> => {
-        const raw = query.trim();
-        // 1. Raw Query
-        let name = await fetchItunes(raw);
-        if (name) return name;
-
-        // 2. Cleaned Query (Convert special punctuation to space, Keep CJK/Kana/En/Num)
-        // \u3000-\u303f (CJK Symbols and Punctuation)
-        // \u3040-\u309f (Hiragana)
-        // \u30a0-\u30ff (Katakana)
-        // \uff00-\uff9f (Fullwidth Forms - Latin, Numbers, Katakana)
-        // \u4e00-\u9faf (CJK Unified Ideographs)
-        const cleaned = raw.replace(/[^\w\s\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        if (cleaned && cleaned !== raw) {
-            name = await fetchItunes(cleaned);
-            if (name) return name;
-        }
-
-        // 3. Longest Line (if multi-line)
-        const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 3);
-        if (lines.length > 1) {
-            const longest = lines.reduce((a, b) => a.length > b.length ? a : b);
-            if (longest !== raw && longest !== cleaned) {
-                name = await fetchItunes(longest);
-                if (name) return name;
-            }
-        }
-
         return null;
     };
 
@@ -214,7 +181,6 @@ export const useContentStore = defineStore('content', () => {
     return {
         rawText,
         currentTitle,
-        lastAnalyzedText,
         playlists,
         isTranslating,
         isNaming,
@@ -222,7 +188,6 @@ export const useContentStore = defineStore('content', () => {
         setRawText,
         setCurrentTitle,
         analyzeSelection,
-        identifySource,
         saveSegment,
         removeSegment
     };

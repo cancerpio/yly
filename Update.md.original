@@ -1,4 +1,3 @@
-
 # Update: 2026-02-16 Smart Collection Naming
 
 ## 變更摘要
@@ -488,26 +487,3 @@
     - 修改為自訂名稱。
     - 選取歌詞並收藏。
     - **預期**：收藏清單名稱應為您手動修改後的名稱，而非自動辨識的結果。
-
-# Update: 2026-02-16 21:40 - Fix Analysis Auto Refresh
-
-## 變更摘要
-
-修復了更換歌詞後，標題不會自動更新的 Bug。現在系統會記錄「上次分析的文本」，當使用者進入分析頁面時，若發現文本內容變更，將強制重新執行自動辨識並更新標題。
-
-### 修改檔案
-
-1.  `frontend/src/stores/content.ts`
-    - 新增 `lastAnalyzedText` 狀態，用於追蹤上次分析內容的變更。
-
-2.  `frontend/src/views/Analysis.vue`
-    - 更新 `onMounted` 邏輯：檢查 `rawText` 是否與 `lastAnalyzedText` 不同。
-    - 若不同，強制執行 `identifySource` 並更新 `lastAnalyzedText`。
-
-## 驗收指令與預期結果
-
-1.  **情境：更換歌詞**
-    - 貼上歌詞 A，進入分析 -> 標題變成 A。
-    - 返回首頁，清空輸入，貼上歌詞 B。
-    - 再次點擊分析。
-    - **預期**：進入分析頁後，標題應自動重新辨識並更新為 B 的歌名 (或顯示正在辨識)，而不是停留在 A。
