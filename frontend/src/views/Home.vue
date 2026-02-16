@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
-import { Save, X, Info, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Save, X, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
-import { SONG_METADATA, type AnalyzedSegment } from '../data/mockData';
+import { type AnalyzedSegment } from '../data/mockData';
 
-const router = useRouter();
 const contentStore = useContentStore();
 const editorRef = ref<HTMLElement | null>(null);
 const isIndentifying = ref(false);
