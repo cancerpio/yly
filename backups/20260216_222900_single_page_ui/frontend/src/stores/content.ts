@@ -120,8 +120,7 @@ export const useContentStore = defineStore('content', () => {
             const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
             const data = await response.json();
             if (data.results && data.results.length > 0) {
-                const track = data.results[0];
-                return `${track.trackName} (${track.artistName})`;
+                return data.results[0].trackName;
             }
         } catch (e) {
             console.error("iTunes search failed:", e);

@@ -1,7 +1,6 @@
-執行時間：2026-02-16 21:40:55
-調整功能：fix-analysis-auto-refresh
-調整類型：修復錯誤
-備份目錄：./backups/20260216_214000_fix-analysis-auto-refresh/
+執行時間：2026-02-16 23:20:00
+調整功能：update-title-format-with-artist
+調整類型：新增功能/UI優化
+備份目錄：./backups/20260216_232000_update_title_format/
 備份檔案清單：
-- frontend/src/views/Analysis.vue
 - frontend/src/stores/content.ts
