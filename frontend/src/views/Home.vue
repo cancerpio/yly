@@ -30,14 +30,14 @@ const startAnalysis = () => {
           <input 
             v-model="contentStore.currentTitle"
             type="text" 
-            placeholder="輸入歌名 (例如: AIZO)..."
+            placeholder="請輸入文章名稱 / 歌名 (Optional)"
             class="title-input glass-input"
           />
         </div>
 
         <textarea 
           v-model="contentStore.rawText"
-          placeholder="輸入文章段落或歌詞..."
+          placeholder="請輸入歌詞或文章段落 (必填)"
           class="lyrics-input glass-input"
           spellcheck="false"
         ></textarea>
@@ -178,5 +178,4 @@ const startAnalysis = () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
 }
-
 </style>

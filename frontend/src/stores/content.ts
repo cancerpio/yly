@@ -1,14 +1,45 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { DEFAULT_LYRICS, LYRICS_DATABASE, type AnalyzedSegment } from '../data/mockData';
+import { type AnalyzedSegment } from '../data/mockData';
+// @ts-ignore
+import Kuroshiro from '@sglkc/kuroshiro';
+// @ts-ignore
+import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
 export const useContentStore = defineStore('content', () => {
     // State
-    const rawText = ref(DEFAULT_LYRICS);
-    const currentTitle = ref("AIZO");
+    const rawText = ref("");
+    const currentTitle = ref("");
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
     const isTranslating = ref(false);
+
+    // Kuroshiro instance
+    const kuroshiro = new Kuroshiro();
+    const isKuroshiroReady = ref(false);
+    const kuroshiroInitPromise = ref<Promise<void> | null>(null);
+
+    // Initialize Kuroshiro
+    const initKuroshiro = async () => {
+        if (isKuroshiroReady.value) return;
+        if (kuroshiroInitPromise.value) return kuroshiroInitPromise.value;
+
+        kuroshiroInitPromise.value = (async () => {
+            try {
+                await kuroshiro.init(new KuromojiAnalyzer({
+                    dictPath: import.meta.env.BASE_URL + "dict/"
+                }));
+                isKuroshiroReady.value = true;
+                console.log("Kuroshiro initialized!");
+            } catch (err) {
+                console.error("Kuroshiro init failed:", err);
+                kuroshiroInitPromise.value = null; // Allow retry
+            }
+        })();
+
+        return kuroshiroInitPromise.value;
+    };
+
 
     // Initialize from localStorage
     const init = () => {
@@ -21,6 +52,8 @@ export const useContentStore = defineStore('content', () => {
                 playlists.value = {};
             }
         }
+        // Start init Kuroshiro in background
+        initKuroshiro();
     };
 
     // Actions
@@ -36,34 +69,43 @@ export const useContentStore = defineStore('content', () => {
         const trimmed = text.trim();
         if (!trimmed) throw new Error("Empty selection");
 
-        // 1. Check local cache (Mock Database) first
-        if (LYRICS_DATABASE[trimmed]) {
-            return LYRICS_DATABASE[trimmed];
-        }
-
-        // 2. Fetch from API
+        // 2. Fetch from API & Kuroshiro
         isTranslating.value = true;
         try {
-            // MyMemory API (Free, Anonymous)
-            // Note: For production use, get an API key and pair.
-            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=ja|zh-TW`);
-            const data = await response.json();
-
-            if (data.responseStatus === 200) {
-                return {
-                    original: trimmed,
-                    pronunciation: "Pending... (需要字典檔)", // Placeholder for now
-                    translation: data.responseData.translatedText
-                };
-            } else {
-                throw new Error(data.responseDetails || "Translation failed");
+            // Ensure Kuroshiro is ready
+            if (!isKuroshiroReady.value) {
+                await initKuroshiro();
             }
+
+            // Parallel execution: Translation + Pronunciation
+            const [translationResp, pronunciation] = await Promise.all([
+                fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=ja|zh-TW`)
+                    .then(res => res.json())
+                    .catch(err => ({ responseStatus: 500, responseDetails: err.message })),
+
+                kuroshiro.convert(trimmed, { to: "romaji", mode: "spaced" })
+                    .catch((err: any) => {
+                        console.error("Kuroshiro convert failed:", err);
+                        return "Pronunciation Error";
+                    })
+            ]);
+
+            const translation = (translationResp.responseStatus === 200)
+                ? translationResp.responseData.translatedText
+                : "翻譯失敗";
+
+            return {
+                original: trimmed,
+                pronunciation: pronunciation,
+                translation: translation
+            };
+
         } catch (error) {
-            console.error("Translation error:", error);
+            console.error("Analysis error:", error);
             return {
                 original: trimmed,
                 pronunciation: "Error",
-                translation: "翻譯失敗，請檢查網路連線"
+                translation: "分析失敗，請檢查網路連線"
             };
         } finally {
             isTranslating.value = false;
