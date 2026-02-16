@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, Save, X, Info, Search, Loader2 } from 'lucide-vue-next';
+import { ArrowLeft, Save, X, Info, Search } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
 import { SONG_METADATA, type AnalyzedSegment } from '../data/mockData';
 
@@ -128,9 +128,9 @@ const performAnalysis = async () => {
     }
 };
 
-const saveCurrentSelection = async () => {
+const saveCurrentSelection = () => {
   if (currentSelection.value) {
-    await contentStore.saveSegment(currentSelection.value);
+    contentStore.saveSegment(currentSelection.value);
     showTooltip.value = false;
     window.getSelection()?.removeAllRanges();
   }
@@ -217,10 +217,9 @@ const goBack = () => {
         </div>
       </div>
 
-      <button class="save-btn" @click="saveCurrentSelection" :disabled="contentStore.isNaming">
-        <Loader2 v-if="contentStore.isNaming" :size="16" class="spin-icon" />
-        <Save v-else :size="16" />
-        {{ contentStore.isNaming ? 'Saving...' : 'Add to List' }}
+      <button class="save-btn" @click="saveCurrentSelection">
+        <Save :size="16" />
+        Add to List
       </button>
     </div>
   </div>
@@ -465,10 +464,6 @@ const goBack = () => {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-
-.spin-icon {
-    animation: spin 1s linear infinite;
 }
 
 .save-btn {

@@ -1,4 +1,3 @@
-
 # Update: 2026-02-16 Smart Collection Naming
 
 ## 變更摘要
@@ -37,27 +36,3 @@
 
 - **iTunes API 限制**：若 API 回應過慢或失敗，系統會回退到隨機命名，但 console 可能會顯示錯誤。
 - **CORS 問題**：瀏覽器可能會阻擋對 iTunes API 的請求。若發生此情況，需考慮使用 Backend Proxy (如 Cloud Functions) 或 JSONP (若支援)。目前實作採用直接 fetch，若失敗則會 gracefully fail 落入預設命名。
-
-# Update: 2026-02-16 14:09 - Adjust iTunes Search Language
-
-## 變更摘要
-
-調整自動命名的 iTunes Search API 參數，強制使用日本地區 (`country=JP`) 與日語 (`lang=ja_jp`)，以確保回傳的歌名為原始日文名稱，而非英文翻譯。
-
-### 修改檔案
-
-1.  `frontend/src/stores/content.ts`
-    - 修改 `identifySource` 函數中的 fetch URL。
-    - 新增 `country=JP` 與 `lang=ja_jp` 參數。
-
-## 驗收指令與預期結果
-
-1.  **情境：自動辨識日文歌曲**
-    - 在首頁不輸入標題。
-    - 貼上一段日文歌詞 (例如 "残酷な天使のテーゼ" 的歌詞)。
-    - 執行收藏。
-    - **預期**：清單名稱應為日文原名 (例如 "残酷な天使のテーゼ")，而非英文譯名 (Cruel Angel's Thesis)。
-
-## 若失敗最可能的原因與修正方向
-
-- **參數無效**：若某些歌曲在 JP Store 沒有上架，可能會查無結果，此時會落回隨機命名。

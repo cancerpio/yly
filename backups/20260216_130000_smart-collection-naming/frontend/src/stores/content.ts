@@ -13,7 +13,6 @@ export const useContentStore = defineStore('content', () => {
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
     const isTranslating = ref(false);
-    const isNaming = ref(false);
 
     // Kuroshiro instance
     const kuroshiro = new Kuroshiro();
@@ -113,54 +112,18 @@ export const useContentStore = defineStore('content', () => {
         }
     };
 
-    const identifySource = async (query: string): Promise<string | null> => {
-        try {
-            // Use iTunes Search API
-            // Limit query length to avoid URI too long errors
-            const term = encodeURIComponent(query.slice(0, 100));
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
-            const data = await response.json();
-            if (data.results && data.results.length > 0) {
-                return data.results[0].trackName;
-            }
-        } catch (e) {
-            console.error("iTunes search failed:", e);
+    const saveSegment = (segment: AnalyzedSegment) => {
+        const listName = currentTitle.value;
+        if (!playlists.value[listName]) {
+            playlists.value[listName] = [];
         }
-        return null;
-    };
 
-    const saveSegment = async (segment: AnalyzedSegment) => {
-        isNaming.value = true;
-        try {
-            // 1. Determine List Name if empty
-            if (!currentTitle.value) {
-                // Try to identify from content
-                const foundName = await identifySource(segment.original);
-
-                if (foundName) {
-                    currentTitle.value = foundName;
-                } else {
-                    // Default random name
-                    const now = new Date();
-                    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                    currentTitle.value = `隨機收藏 ${dateStr}`;
-                }
-            }
-
-            const listName = currentTitle.value;
-            if (!playlists.value[listName]) {
-                playlists.value[listName] = [];
-            }
-
-            const list = playlists.value[listName];
-            // Avoid duplicates based on original text
-            if (!list.some(s => s.original === segment.original)) {
-                list.unshift(segment); // Add to top (newest first)
-                playlists.value[listName] = [...list]; // Trigger reactivity if needed
-                saveToStorage();
-            }
-        } finally {
-            isNaming.value = false;
+        const list = playlists.value[listName];
+        // Avoid duplicates based on original text
+        if (!list.some(s => s.original === segment.original)) {
+            list.unshift(segment); // Add to top (newest first)
+            playlists.value[listName] = [...list]; // Trigger reactivity if needed
+            saveToStorage();
         }
     };
 
@@ -183,7 +146,6 @@ export const useContentStore = defineStore('content', () => {
         currentTitle,
         playlists,
         isTranslating,
-        isNaming,
         init,
         setRawText,
         setCurrentTitle,

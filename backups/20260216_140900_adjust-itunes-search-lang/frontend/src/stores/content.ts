@@ -118,7 +118,7 @@ export const useContentStore = defineStore('content', () => {
             // Use iTunes Search API
             // Limit query length to avoid URI too long errors
             const term = encodeURIComponent(query.slice(0, 100));
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song`);
             const data = await response.json();
             if (data.results && data.results.length > 0) {
                 return data.results[0].trackName;
