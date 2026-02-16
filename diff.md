@@ -109,3 +109,87 @@ cp ./backups/20260216_211500_improve-search-precision/frontend/src/stores/conten
 ```bash
 rm -rf ./backups/20260216_211500_improve-search-precision/
 ```
+
+# Feature analysis-title-feedback 變更記錄
+
+執行時間：2026-02-16 21:24:52
+Feature Name：analysis-title-feedback
+調整類型：調整功能
+備份目錄：./backups/20260216_212400_analysis-title-feedback/
+
+## 變更摘要
+
+### 修改的檔案
+- `frontend/src/views/Analysis.vue`
+  - 變更類型：修改
+  - 變更說明：實作可編輯的標題欄位與自動辨識邏輯。
+  - 主要變更：
+    - 新增 `.title-edit-container`
+    - 新增 `onMounted` 自動呼叫 `identifySource`
+    - 新增 `isIdentifying` Loading 狀態
+  - 備份位置：`./backups/20260216_212400_analysis-title-feedback/frontend/src/views/Analysis.vue`
+
+- `frontend/src/stores/content.ts`
+  - 變更類型：修改
+  - 變更說明：公開 `identifySource` 供外部存取。
+  - 主要變更：
+    - 將 `identifySource` 加入 return 物件
+  - 備份位置：`./backups/20260216_211500_improve-search-precision/frontend/src/stores/content.ts` (使用上一個備份點或不需要備份此次小改動)
+
+## 還原方式
+
+### 步驟 1：恢復備份檔案
+
+```bash
+# 恢復 view 設定
+cp ./backups/20260216_212400_analysis-title-feedback/frontend/src/views/Analysis.vue frontend/src/views/Analysis.vue
+```
+
+### 步驟 2：清理備份（還原後選用）
+
+```bash
+rm -rf ./backups/20260216_212400_analysis-title-feedback/
+```
+
+# Feature fix-analysis-auto-refresh 變更記錄
+
+執行時間：2026-02-16 21:40:55
+Feature Name：fix-analysis-auto-refresh
+調整類型：修復錯誤
+備份目錄：./backups/20260216_214000_fix-analysis-auto-refresh/
+
+## 變更摘要
+
+### 修改的檔案
+- `frontend/src/stores/content.ts`
+  - 變更類型：修改
+  - 變更說明：新增 `lastAnalyzedText` 狀態。
+  - 主要變更：
+    - 新增 `lastAnalyzedText` state
+    - 更新 return 物件
+  - 備份位置：`./backups/20260216_214000_fix-analysis-auto-refresh/frontend/src/stores/content.ts`
+
+- `frontend/src/views/Analysis.vue`
+  - 變更類型：修改
+  - 變更說明：修復再次分析時標題不更新的 Bug。
+  - 主要變更：
+    - 在 `onMounted` 新增變更檢測邏輯
+  - 備份位置：`./backups/20260216_214000_fix-analysis-auto-refresh/frontend/src/views/Analysis.vue`
+
+## 還原方式
+
+### 步驟 1：恢復備份檔案
+
+```bash
+# 恢復 store 設定
+cp ./backups/20260216_214000_fix-analysis-auto-refresh/frontend/src/stores/content.ts frontend/src/stores/content.ts
+
+# 恢復 view 設定
+cp ./backups/20260216_214000_fix-analysis-auto-refresh/frontend/src/views/Analysis.vue frontend/src/views/Analysis.vue
+```
+
+### 步驟 2：清理備份（還原後選用）
+
+```bash
+rm -rf ./backups/20260216_214000_fix-analysis-auto-refresh/
+```

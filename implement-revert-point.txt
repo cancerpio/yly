@@ -1,6 +1,7 @@
-執行時間：2026-02-16 21:15:29
-調整功能：improve-search-precision
-調整類型：調整功能
-備份目錄：./backups/20260216_211500_improve-search-precision/
+執行時間：2026-02-16 21:40:55
+調整功能：fix-analysis-auto-refresh
+調整類型：修復錯誤
+備份目錄：./backups/20260216_214000_fix-analysis-auto-refresh/
 備份檔案清單：
+- frontend/src/views/Analysis.vue
 - frontend/src/stores/content.ts
