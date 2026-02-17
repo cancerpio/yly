@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Save, X, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { Save, X, Info, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
-import { type AnalyzedSegment } from '../data/mockData';
+import { SONG_METADATA, type AnalyzedSegment } from '../data/mockData';
 
+const router = useRouter();
 const contentStore = useContentStore();
 const editorRef = ref<HTMLElement | null>(null);
 const isIndentifying = ref(false);
@@ -181,10 +183,6 @@ const clearContent = () => {
         <!-- Header / Title -->
         <div class="header-section">
             <h1 class="appName">Lyrics Yomi</h1>
-            <p class="appDesc">日文歌詞 / 文章發音助手</p>
-            <div class="tip-message">
-                <span>💡 提示: 貼上歌詞後，圈選任一段文字即可翻譯！</span>
-            </div>
             <div class="title-wrapper">
                  <input 
                     v-model="contentStore.currentTitle" 
@@ -283,36 +281,25 @@ const clearContent = () => {
     background: rgba(255, 255, 255, 0.65);
     border-radius: 24px;
     min-height: 80vh; 
-    text-align: center;
 }
 
 /* Header */
 .header-section {
     display: flex;
-    flex-direction: column;
-    align-items: center; /* Center horizontally */
-    gap: 12px;
+    align-items: center;
+    gap: 16px;
     margin-bottom: 8px;
-    width: 100%; /* Ensure full width */
 }
 
 .appName {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--color-primary, #007aff);
-    opacity: 0.9;
-    margin: 0;
-}
-
-.appDesc {
-    color: var(--color-text-sub);
-    margin-top: -4px;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 .title-wrapper {
-    width: 100%;
+    flex: 1;
     position: relative;
     display: flex;
     align-items: center;
@@ -325,71 +312,56 @@ const clearContent = () => {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--color-text-main);
-    padding: 8px 0; /* Add top/bottom padding */
-    padding-right: 32px; /* Add right padding to prevent text from overlapping icon */
-    padding-left: 12px; /* Add left padding for symmetry */
-    border-bottom: 1px solid rgba(0,0,0,0.05); /* Very subtle bottom border initially */
+    padding: 4px 0;
+    padding-right: 24px;
+    border-bottom: 2px solid transparent; /* Hide border until focus/hover */
     transition: all 0.2s;
-    text-align: center;
-    border-radius: 8px; /* Slight radius */
 }
 
 .title-input:hover, .title-input:focus {
-    /* Apple Style: subtle background change instead of border highlight */
-    background: rgba(0,0,0,0.03); 
-    border-bottom-color: transparent; /* Hide border on focus */
+    border-bottom-color: rgba(0,0,0,0.1);
     outline: none;
 }
 
 .status-icon {
     position: absolute;
-    right: 12px; /* Move away from edge */
+    right: 0;
     color: var(--color-text-sub);
     pointer-events: none;
     opacity: 0.5;
 }
 
 .clear-btn {
-    position: absolute; 
-    right: 0;
-    top: 0; 
-    display: none; 
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-sub);
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
 }
-
-/* Tip Message */
-.tip-message {
-    width: 100%; /* Ensure full width */
-    text-align: center;
-    color: var(--color-primary, #10b981); 
-    background: rgba(16, 185, 129, 0.1); 
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 10px 16px;
-    margin-bottom: 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    box-sizing: border-box; /* Prevent padding from breaking layout */
+.clear-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--color-error, #ff4d4f);
 }
 
 /* Editor Area - ContentEditable */
 .editor-area {
     flex: 1;
-    width: 100%; /* Ensure full width */
+    width: 100%;
     min-height: 400px;
-    padding: 20px; /* Reduced padding slightly */
-    font-size: 1rem; /* Slightly smaller font if requested */
+    padding: 20px;
+    font-size: 1.1rem;
     line-height: 1.8;
     color: var(--color-text-main);
     white-space: pre-wrap;
     word-wrap: break-word;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255,255,255,0.4);
     outline: none;
     overflow-y: auto;
     transition: all 0.3s ease;
-    text-align: left; /* Keep text aligned left */
-    box-sizing: border-box; /* CRITICAL: Fix for layout overflow */
 }
 
 .editor-area:focus {
