@@ -28,5 +28,10 @@ build/
 .agent/
 node_modules/_*
 
-# mini app guide
+# internal documents
 line-mini-*.md
+*solution.md
+*guide.md
+*agent-skill-guideline.md
+*implement-normal-feature-task.md
+
