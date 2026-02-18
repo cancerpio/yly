@@ -56,3 +56,9 @@
   - Playlists.vue: Header (Saved Playlists -> Saved Card Lists)
   - RecentLists.vue: Header (最近新增清單 -> 最近新增字卡列表)
 
+
+### App Branding Update
+- **App Name**: 正式更名為 **Yomi Cards**。
+- **App Description**: 副標題更新為 "把日文化為可回顧的卡片"。
+- **Index Title**: 瀏覽器分頁標題已更新。
+

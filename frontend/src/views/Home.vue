@@ -181,8 +181,8 @@ const clearContent = () => {
         
         <!-- Header / Title -->
         <div class="header-section">
-            <h1 class="appName">Lyrics Yomi</h1>
-            <p class="appDesc">日文歌詞 / 文章發音助手</p>
+            <h1 class="appName">Yomi Cards</h1>
+            <p class="appDesc">把日文化為可回顧的卡片</p>
             <div class="tip-message">
                 <span>💡 提示: 貼上歌詞後，圈選任一段文字即可翻譯！</span>
             </div>
@@ -195,7 +195,7 @@ const clearContent = () => {
                     v-model="contentStore.currentTitle" 
                     type="text" 
                     class="title-input" 
-                    placeholder="Song Title..." 
+                    placeholder="例如：満ちてゆく / 声優グランプリ訪談 (歌名 / 文章)..." 
                 />
                 <Loader2 v-if="isIndentifying" :size="16" class="spin-icon status-icon" />
                 <Edit3 v-else :size="16" class="edit-icon status-icon" />
@@ -213,7 +213,7 @@ const clearContent = () => {
             @input="updateContent"
             @paste="handlePaste"
             spellcheck="false"
-            data-placeholder="請在此貼上歌詞，選取文字即可翻譯..."
+            data-placeholder="貼上歌詞或文章，選取文字建立字卡..."
         ></div>
         
     </div>

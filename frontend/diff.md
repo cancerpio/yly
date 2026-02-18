@@ -124,3 +124,14 @@ cp .backups/ui-recent-list-v2/content.ts src/stores/content.ts
   - 變更類型：修改 (Terminology)
   - 變更說明：Header 更名 (最近新增清單 -> 最近新增字卡列表)
 
+
+### App Branding Update
+- src/index.html: Title -> Yomi Cards
+- src/views/Home.vue: Header -> Yomi Cards / 把日文化為可回顧的卡片
+
+
+### UX Refactor (Home.vue)
+- src/views/Home.vue
+  - 變更類型：修改 (Placeholders)
+  - 變更說明：更新 Title Input 與 Editor 的 placeholder，使用具體範例以引導使用者建立字卡。
+
