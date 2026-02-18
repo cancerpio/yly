@@ -24,6 +24,10 @@ export const useContentStore = defineStore('content', () => {
     const isKuroshiroReady = ref(false);
     const kuroshiroInitPromise = ref<Promise<void> | null>(null);
 
+    // Debug info
+    const lastError = ref<string>("");
+    const lastIdentifiedQuery = ref<string>("");
+
     // Initialize Kuroshiro
     const initKuroshiro = async () => {
         if (isKuroshiroReady.value) return;
@@ -147,14 +151,22 @@ export const useContentStore = defineStore('content', () => {
     const fetchItunes = async (query: string) => {
         try {
             const term = encodeURIComponent(query.slice(0, 100));
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+            // Force JSONP-like behavior? No, just CORS mode explicitly
+            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`, {
+                mode: 'cors'
+            });
+            if (!response.ok) {
+                lastError.value = `Fetch failed: ${response.status}`;
+                return null;
+            }
             const data = await response.json();
             if (data.results && data.results.length > 0) {
                 const track = data.results[0];
                 return `${track.trackName} (${track.artistName})`;
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("iTunes search failed:", e);
+            lastError.value = `iTunes Error: ${e.message}`;
         }
         return null;
     };
@@ -162,6 +174,9 @@ export const useContentStore = defineStore('content', () => {
     const identifySource = async (query: string): Promise<string | null> => {
         const raw = query.trim();
         if (!raw) return null;
+
+        lastError.value = ""; // Clear
+        lastIdentifiedQuery.value = query; // Record attempt
 
         // 1. Raw Query (Only if short enough to be a title)
         if (raw.length < 50) {
@@ -274,6 +289,8 @@ export const useContentStore = defineStore('content', () => {
         analyzeSelection,
         identifySource,
         saveSegment,
-        removeSegment
+        removeSegment,
+        lastError,
+        lastIdentifiedQuery
     };
 });
