@@ -58,9 +58,18 @@ const updateContent = (event: Event) => {
 const handleCompositionEnd = (event: Event) => {
     // Force update after composition ends (e.g. mobile keyboard predictive text)
     const target = event.target as HTMLElement;
-    contentStore.rawText = target.innerText;
+    contentStore.rawText = target.innerText || target.textContent || "";
     // Immediate call or debounced? Debounced is safer.
     debouncedIdentify();
+};
+
+// Fallback for mobile backspace/delete which sometimes doesn't trigger input
+const handleKeyUp = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (contentStore.rawText !== (target.innerText || target.textContent || "")) {
+         contentStore.rawText = target.innerText || target.textContent || "";
+         debouncedIdentify();
+    }
 };
 
 const handlePaste = (event: ClipboardEvent) => {
@@ -221,6 +230,7 @@ const clearContent = () => {
             contenteditable="true"
             @input="updateContent"
             @compositionend="handleCompositionEnd"
+            @keyup="handleKeyUp"
             @paste="handlePaste"
             spellcheck="false"
             data-placeholder="貼上歌詞或文章，選取文字建立字卡..."
