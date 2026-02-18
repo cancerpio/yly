@@ -101,7 +101,32 @@ export const useContentStore = defineStore('content', () => {
         currentTitle.value = title || "Untitled";
     };
 
+    // Helper for JSONP to bypass CORS on mobile
+    const jsonp = (url: string): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            const script = document.createElement('script');
+            const cleanup = () => {
+                delete (window as any)[callbackName];
+                document.body.removeChild(script);
+            };
+
+            (window as any)[callbackName] = (data: any) => {
+                cleanup();
+                resolve(data);
+            };
+
+            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
+            script.onerror = (e) => {
+                cleanup();
+                reject(new Error('JSONP request failed'));
+            };
+            document.body.appendChild(script);
+        });
+    };
+
     const analyzeSelection = async (text: string): Promise<AnalyzedSegment> => {
+        // ... (existing code, unchanged) this block is just a placeholder to locate fetchItunes below
         const trimmed = text.trim();
         if (!trimmed) throw new Error("Empty selection");
 
@@ -151,15 +176,9 @@ export const useContentStore = defineStore('content', () => {
     const fetchItunes = async (query: string) => {
         try {
             const term = encodeURIComponent(query.slice(0, 100));
-            // Force JSONP-like behavior? No, just CORS mode explicitly
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`, {
-                mode: 'cors'
-            });
-            if (!response.ok) {
-                lastError.value = `Fetch failed: ${response.status}`;
-                return null;
-            }
-            const data = await response.json();
+            // Use JSONP to strictly bypass CORS issues on mobile browsers
+            const data = await jsonp(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+
             if (data.results && data.results.length > 0) {
                 const track = data.results[0];
                 return `${track.trackName} (${track.artistName})`;
