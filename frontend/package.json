@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@sglkc/kuroshiro": "^1.0.1",
+    "firebase": "^12.9.0",
     "kuroshiro-analyzer-kuromoji": "^1.1.0",
     "lucide-vue-next": "^0.563.0",
     "pinia": "^3.0.4",

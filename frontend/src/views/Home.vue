@@ -51,6 +51,15 @@ const updateContent = (event: Event) => {
     // We update the store with innerText to keep it clean (no HTML tags)
     // But for display we let browser handle it
     contentStore.rawText = target.innerText;
+    // Debounced identify only after regular input
+    debouncedIdentify();
+};
+
+const handleCompositionEnd = (event: Event) => {
+    // Force update after composition ends (e.g. mobile keyboard predictive text)
+    const target = event.target as HTMLElement;
+    contentStore.rawText = target.innerText;
+    // Immediate call or debounced? Debounced is safer.
     debouncedIdentify();
 };
 
@@ -211,6 +220,7 @@ const clearContent = () => {
             class="editor-area glass-input"
             contenteditable="true"
             @input="updateContent"
+            @compositionend="handleCompositionEnd"
             @paste="handlePaste"
             spellcheck="false"
             data-placeholder="貼上歌詞或文章，選取文字建立字卡..."
