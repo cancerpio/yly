@@ -255,6 +255,12 @@ const clearContent = () => {
     </div>
 
     <!-- Analysis Result Tooltip -->
+    <div v-if="contentStore.rawText" class="debug-overlay" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); color: lime; padding: 10px; z-index: 9999; font-size: 10px; pointer-events: none; max-width: 300px; word-break: break-all;">
+        RAW: {{ contentStore.rawText.slice(0, 50) }}...<br>
+        LEN: {{ contentStore.rawText.length }}<br>
+        TITLE: {{ contentStore.currentTitle }}
+    </div>
+
     <div 
       v-if="showTooltip && currentSelection"
       class="selection-tooltip glass-card"
