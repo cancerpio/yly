@@ -161,9 +161,13 @@ export const useContentStore = defineStore('content', () => {
 
     const identifySource = async (query: string): Promise<string | null> => {
         const raw = query.trim();
-        // 1. Raw Query
-        let name = await fetchItunes(raw);
-        if (name) return name;
+        if (!raw) return null;
+
+        // 1. Raw Query (Only if short enough to be a title)
+        if (raw.length < 50) {
+            let name = await fetchItunes(raw);
+            if (name) return name;
+        }
 
         // 2. Cleaned Query (Convert special punctuation to space, Keep CJK/Kana/En/Num)
         // \u3000-\u303f (CJK Symbols and Punctuation)
@@ -175,17 +179,22 @@ export const useContentStore = defineStore('content', () => {
             .replace(/\s+/g, ' ')
             .trim();
 
-        if (cleaned && cleaned !== raw) {
-            name = await fetchItunes(cleaned);
+        if (cleaned && cleaned !== raw && cleaned.length < 50) {
+            let name = await fetchItunes(cleaned);
             if (name) return name;
         }
 
-        // 3. Longest Line (if multi-line)
-        const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 3);
-        if (lines.length > 1) {
-            const longest = lines.reduce((a, b) => a.length > b.length ? a : b);
-            if (longest !== raw && longest !== cleaned) {
-                name = await fetchItunes(longest);
+        // 3. Longest Line Logic (Enhanced for Mobile)
+        // Split by newline OR multiple spaces (common in mobile copy/paste)
+        const lines = raw.split(/[\n\r]+|\s{2,}/).map(l => l.trim()).filter(l => l.length > 5 && l.length < 100);
+
+        if (lines.length > 0) {
+            // Sort by length desc
+            lines.sort((a, b) => b.length - a.length);
+
+            // Try top 3 longest lines
+            for (const line of lines.slice(0, 3)) {
+                const name = await fetchItunes(line);
                 if (name) return name;
             }
         }

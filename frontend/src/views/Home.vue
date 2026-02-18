@@ -22,7 +22,7 @@ const identifySource = async () => {
     if (!contentStore.rawText.trim()) return;
     isIndentifying.value = true;
     try {
-        const query = contentStore.rawText.slice(0, 100);
+        const query = contentStore.rawText.slice(0, 500);
         const foundName = await contentStore.identifySource(query);
          if (foundName) {
             contentStore.currentTitle = foundName;
