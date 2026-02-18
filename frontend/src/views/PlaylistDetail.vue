@@ -20,7 +20,8 @@ onMounted(() => {
 });
 
 const goBack = () => {
-  router.back();
+  // Always go back to the full list view (Hierarchical navigation)
+  router.push({ name: 'Playlists' });
 };
 
 const removeItem = (original: string) => {

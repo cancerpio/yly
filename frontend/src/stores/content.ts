@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { type AnalyzedSegment } from '../data/mockData';
 // @ts-ignore
 import Kuroshiro from '@sglkc/kuroshiro';
@@ -12,6 +12,9 @@ export const useContentStore = defineStore('content', () => {
     const currentTitle = ref("");
     // Map of title -> list of segments
     const playlists = ref<Record<string, AnalyzedSegment[]>>({});
+    // Store last modified timestamps for lists: Record<listName, timestamp>
+    const playlistTimestamps = ref<Record<string, number>>({});
+
     const lastAnalyzedText = ref("");
     const isTranslating = ref(false);
     const isNaming = ref(false);
@@ -54,9 +57,36 @@ export const useContentStore = defineStore('content', () => {
                 playlists.value = {};
             }
         }
+        const storedTs = localStorage.getItem('playlistTimestamps');
+        if (storedTs) {
+            try {
+                playlistTimestamps.value = JSON.parse(storedTs);
+            } catch (e) {
+                console.error('Failed to parse timestamps', e);
+            }
+        }
+
         // Start init Kuroshiro in background
         initKuroshiro();
     };
+
+    // Getter for Recent Lists
+    const recentLists = computed(() => {
+        // getting entries of playlists
+        const entries = Object.entries(playlists.value);
+        if (entries.length === 0) return [];
+
+        // Sort by timestamp desc
+        return entries.sort((a, b) => {
+            const timeA = playlistTimestamps.value[a[0]] || 0;
+            const timeB = playlistTimestamps.value[b[0]] || 0;
+            return timeB - timeA;
+        }).slice(0, 3).map(([title, segments]) => ({
+            title,
+            latestSegment: segments.length > 0 ? segments[0] : null,
+            count: segments.length
+        }));
+    });
 
     // Actions
     const setRawText = (text: string) => {
@@ -191,6 +221,10 @@ export const useContentStore = defineStore('content', () => {
             if (!list.some(s => s.original === segment.original)) {
                 list.unshift(segment); // Add to top (newest first)
                 playlists.value[listName] = [...list]; // Trigger reactivity if needed
+
+                // Update Timestamp
+                playlistTimestamps.value[listName] = Date.now();
+
                 saveToStorage();
             }
         } finally {
@@ -203,6 +237,10 @@ export const useContentStore = defineStore('content', () => {
             playlists.value[listName] = playlists.value[listName].filter(s => s.original !== original);
             if (playlists.value[listName].length === 0) {
                 delete playlists.value[listName];
+                delete playlistTimestamps.value[listName];
+            } else {
+                // Update timestamp on remove too? Maybe not necessary but keeps it active
+                playlistTimestamps.value[listName] = Date.now();
             }
             saveToStorage();
         }
@@ -210,6 +248,7 @@ export const useContentStore = defineStore('content', () => {
 
     const saveToStorage = () => {
         localStorage.setItem('playlists', JSON.stringify(playlists.value));
+        localStorage.setItem('playlistTimestamps', JSON.stringify(playlistTimestamps.value));
     };
 
     return {
@@ -217,6 +256,7 @@ export const useContentStore = defineStore('content', () => {
         currentTitle,
         lastAnalyzedText,
         playlists,
+        recentLists,
         isTranslating,
         isNaming,
         init,

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Save, X, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
+import RecentLists from '@/components/RecentLists.vue';
 import { type AnalyzedSegment } from '../data/mockData';
 
 const contentStore = useContentStore();
@@ -185,6 +186,10 @@ const clearContent = () => {
             <div class="tip-message">
                 <span>💡 提示: 貼上歌詞後，圈選任一段文字即可翻譯！</span>
             </div>
+
+            <!-- Recent Lists (Moved here) -->
+            <RecentLists />
+
             <div class="title-wrapper">
                  <input 
                     v-model="contentStore.currentTitle" 

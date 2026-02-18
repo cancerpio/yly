@@ -28,9 +28,9 @@ const openPlaylist = (name: string) => {
     <div class="glass-panel header">
       <h1 class="title-lg">
         <ListMusic :size="24" style="margin-right: 12px; vertical-align: bottom" />
-        Saved Playlists
+        Saved Card Lists
       </h1>
-      <p>已儲存的清單列表</p>
+      <p>已儲存的字卡列表</p>
     </div>
 
     <div v-if="Object.keys(contentStore.playlists).length === 0" class="empty-state glass-card">

@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { Home, ListMusic, Settings } from 'lucide-vue-next';
+import { useContentStore } from '@/stores/content';
+
+const contentStore = useContentStore();
+contentStore.init();
 </script>
 
 <template>
@@ -19,7 +23,7 @@ import { Home, ListMusic, Settings } from 'lucide-vue-next';
       </router-link>
       <router-link to="/playlists" class="nav-item">
         <ListMusic :size="24" />
-        <span>Lists</span>
+        <span>Card Lists</span>
       </router-link>
       <router-link to="/settings" class="nav-item">
         <Settings :size="24" />
