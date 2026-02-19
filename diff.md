@@ -370,3 +370,80 @@ cp ./backups/20260216_232000_update_title_format/frontend/src/stores/content.ts 
 ```bash
 rm -rf ./backups/20260216_232000_update_title_format/
 ```
+# Feature batch-lyrics-single-api-call 變更記錄
+
+執行時間：Thu Feb 19 21:15:19 CST 2026
+Feature Name：batch-lyrics-single-api-call
+調整類型：新增功能
+備份目錄：./backups/20260219_batch_lyrics/
+
+## 變更摘要
+
+### 修改的檔案
+- frontend/src/stores/content.ts
+  - 變更類型：修改
+  - 變更說明：實作 API Proxy (CORS Fix) 與批次卡片建立功能
+  - 主要變更：
+    - 新增 createBatchPlaylist 函式
+    - 將 fetchItunes 改為使用 allorigins Proxy
+    - 移除 JSONP 相關程式碼
+    - 修正 saveSegment 與 identifySource 邏輯
+  - 備份位置：./backups/20260219_batch_lyrics/content.ts
+
+- frontend/src/views/Home.vue
+  - 變更類型：修改
+  - 變更說明：新增批次建立按鈕與修復儲存邏輯
+  - 主要變更：
+    - 新增 Create Batch List 按鈕
+    - 更新 saveCurrentSelection 以配合 store 變更
+    - 確保手機輸入事件監聽 (compositionend)
+  - 備份位置：./backups/20260219_batch_lyrics/Home.vue
+
+- frontend/src/views/PlaylistDetail.vue
+  - 變更類型：修改
+  - 變更說明：配合 Store 變更移除項目邏輯
+  - 主要變更：
+    - 將 removeItem 參數從原始字串改為索引 (index)
+
+## 還原方式
+
+### 步驟 1：恢復備份檔案
+
+```bash
+# 恢復 content.ts
+cp ./backups/20260219_batch_lyrics/content.ts frontend/src/stores/content.ts
+
+# 恢復 Home.vue
+cp ./backups/20260219_batch_lyrics/Home.vue frontend/src/views/Home.vue
+```
+
+
+# Feature revert-proxy-keep-batch 變更記錄
+
+執行時間：Thu Feb 19 21:26:26 CST 2026
+Feature Name：revert-proxy-keep-batch
+調整類型：修改功能
+備份目錄：./backups/20260219_revert_cors_keep_batch/
+
+## 變更摘要
+
+### 修改的檔案
+- frontend/src/stores/content.ts
+  - 變更類型：修改
+  - 變更說明：還原 iTunes API 呼叫方式
+  - 主要變更：
+    - 移除 allorigins Proxy 與 CORS 設定
+    - 改回標準 fetch 直接呼叫 iTunes API（因使用者確認 2/17 舊版直接呼叫在手機上可行）
+    - 保留 batch create 與 debug log
+  - 備份位置：./backups/20260219_revert_cors_keep_batch/content.ts
+
+## 還原方式
+
+### 步驟 1：恢復備份檔案
+
+```bash
+# 恢復 content.ts
+cp ./backups/20260219_revert_cors_keep_batch/content.ts frontend/src/stores/content.ts
+```
+
+

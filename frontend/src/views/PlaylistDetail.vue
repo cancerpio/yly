@@ -24,8 +24,8 @@ const goBack = () => {
   router.push({ name: 'Playlists' });
 };
 
-const removeItem = (original: string) => {
-  contentStore.removeSegment(playlistName.value, original);
+const removeItem = (index: number) => {
+  contentStore.removeSegment(playlistName.value, index);
 };
 </script>
 
@@ -57,7 +57,7 @@ const removeItem = (original: string) => {
           <div class="translation">{{ item.translation }}</div>
         </div>
         
-        <button class="delete-btn" @click="removeItem(item.original)">
+        <button class="delete-btn" @click="removeItem(index)">
           <Trash2 :size="18" />
         </button>
       </div>

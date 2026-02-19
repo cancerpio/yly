@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { Save, X, Search, Loader2, Edit3, Trash2 } from 'lucide-vue-next';
 import { useContentStore } from '../stores/content';
 import RecentLists from '@/components/RecentLists.vue';
 import { type AnalyzedSegment } from '../data/mockData';
 
 const contentStore = useContentStore();
-const router = useRouter();
 const editorRef = ref<HTMLElement | null>(null);
 const isIndentifying = ref(false);
 
@@ -179,34 +177,10 @@ const performAnalysis = async () => {
 
 const saveCurrentSelection = async () => {
   if (currentSelection.value) {
-    if (!contentStore.currentTitle) {
-      await identifySource();
-    }
-    await contentStore.saveSegment(currentSelection.value, contentStore.currentTitle);
+    await contentStore.saveSegment(currentSelection.value);
     showTooltip.value = false;
     window.getSelection()?.removeAllRanges();
   }
-};
-
-const createBatchList = async () => {
-    if (!contentStore.rawText.trim()) return;
-    
-    // Auto-identify if title missing
-    if (!contentStore.currentTitle) {
-        await identifySource();
-    }
-    
-    // Create
-    try {
-        contentStore.isNaming = true; // Use as loading
-        await contentStore.createBatchPlaylist(contentStore.rawText, contentStore.currentTitle);
-        // Navigate to the list
-        router.push({ name: 'PlaylistDetail', params: { id: contentStore.currentTitle } });
-    } catch (e: any) {
-        alert("Batch creation failed: " + e.message);
-    } finally {
-        contentStore.isNaming = false;
-    }
 };
 
 const clearContent = () => {
@@ -262,13 +236,6 @@ const clearContent = () => {
             data-placeholder="貼上歌詞或文章，選取文字建立字卡..."
         ></div>
         
-        <div class="batch-create-wrapper" v-if="contentStore.rawText">
-            <button class="batch-btn" @click="createBatchList" :disabled="contentStore.isNaming">
-                <Loader2 v-if="contentStore.isNaming" :size="20" class="spin-icon" />
-                <span v-else>📜 建立歌詞字卡清單</span>
-            </button>
-        </div>
-        
     </div>
 
     <!-- Floating Action Button for Analysis -->
@@ -288,13 +255,13 @@ const clearContent = () => {
     </div>
 
     <!-- Analysis Result Tooltip -->
-    <!-- <div v-if="contentStore.rawText" class="debug-overlay" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); color: lime; padding: 10px; z-index: 9999; font-size: 10px; pointer-events: none; max-width: 300px; word-break: break-all;">
+    <div v-if="contentStore.rawText" class="debug-overlay" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); color: lime; padding: 10px; z-index: 9999; font-size: 10px; pointer-events: none; max-width: 300px; word-break: break-all;">
         RAW: {{ contentStore.rawText.slice(0, 50) }}...<br>
         LEN: {{ contentStore.rawText.length }}<br>
         TITLE: {{ contentStore.currentTitle }}<br>
         LAST_Q: {{ contentStore.lastIdentifiedQuery }}<br>
         ERR: {{ contentStore.lastError }}
-    </div> -->
+    </div>
 
     <div 
       v-if="showTooltip && currentSelection"
@@ -610,39 +577,5 @@ const clearContent = () => {
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-}
-
-.batch-create-wrapper {
-    width: 100%;
-    margin-top: 10px;
-}
-
-.batch-btn {
-    width: 100%;
-    background: var(--color-primary, #10b981);
-    color: white;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.batch-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-}
-
-.batch-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
 }
 </style>

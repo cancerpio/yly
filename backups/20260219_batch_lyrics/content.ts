@@ -101,6 +101,30 @@ export const useContentStore = defineStore('content', () => {
         currentTitle.value = title || "Untitled";
     };
 
+    // Helper for JSONP to bypass CORS on mobile
+    const jsonp = (url: string): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            const script = document.createElement('script');
+            const cleanup = () => {
+                delete (window as any)[callbackName];
+                document.body.removeChild(script);
+            };
+
+            (window as any)[callbackName] = (data: any) => {
+                cleanup();
+                resolve(data);
+            };
+
+            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
+            script.onerror = (e) => {
+                cleanup();
+                reject(new Error('JSONP request failed'));
+            };
+            document.body.appendChild(script);
+        });
+    };
+
     const analyzeSelection = async (text: string): Promise<AnalyzedSegment> => {
         // ... (existing code, unchanged) this block is just a placeholder to locate fetchItunes below
         const trimmed = text.trim();
@@ -152,16 +176,9 @@ export const useContentStore = defineStore('content', () => {
     const fetchItunes = async (query: string) => {
         try {
             const term = encodeURIComponent(query.slice(0, 100));
-            // Revert: Use direct fetch. User confirmed 2/17 build without proxy worked on mobile.
-            // Avoid mode: 'cors' or complex headers which might trigger stricter preflight.
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+            // Use JSONP to strictly bypass CORS issues on mobile browsers
+            const data = await jsonp(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
 
-            if (!response.ok) {
-                lastError.value = `HTTP Error: ${response.status}`;
-                return null;
-            }
-
-            const data = await response.json();
             if (data.results && data.results.length > 0) {
                 const track = data.results[0];
                 return `${track.trackName} (${track.artistName})`;
@@ -219,76 +236,48 @@ export const useContentStore = defineStore('content', () => {
         return null;
     };
 
-    const saveSegment = (segment: AnalyzedSegment, listName: string) => {
-        if (!playlists.value[listName]) {
-            playlists.value[listName] = [];
-            playlistTimestamps.value[listName] = Date.now();
+    const saveSegment = async (segment: AnalyzedSegment) => {
+        isNaming.value = true;
+        try {
+            // 1. Determine List Name if empty
+            if (!currentTitle.value) {
+                // Try to identify from content
+                const foundName = await identifySource(segment.original);
+
+                if (foundName) {
+                    currentTitle.value = foundName;
+                } else {
+                    // Default random name
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    currentTitle.value = `隨機收藏 ${dateStr}`;
+                }
+            }
+
+            const listName = currentTitle.value;
+            if (!playlists.value[listName]) {
+                playlists.value[listName] = [];
+            }
+
+            const list = playlists.value[listName];
+            // Avoid duplicates based on original text
+            if (!list.some(s => s.original === segment.original)) {
+                list.unshift(segment); // Add to top (newest first)
+                playlists.value[listName] = [...list]; // Trigger reactivity if needed
+
+                // Update Timestamp
+                playlistTimestamps.value[listName] = Date.now();
+
+                saveToStorage();
+            }
+        } finally {
+            isNaming.value = false;
         }
-
-        // Add at the beginning
-        playlists.value[listName].unshift(segment);
-        // Update timestamp
-        playlistTimestamps.value[listName] = Date.now();
-
-        saveToStorage();
     };
 
-    const createBatchPlaylist = async (fullText: string, listName: string) => {
-        // 1. Analyze full text (One API call)
-        const analyzed = await analyzeSelection(fullText);
-
-        // 2. Split by newlines
-        const originals = analyzed.original.split('\n').map(s => s.trim()).filter(Boolean);
-        const translations = analyzed.translation.split('\n').map(s => s.trim()).filter(Boolean);
-        const pronunciations = analyzed.pronunciation.split('\n').map(s => s.trim()).filter(Boolean);
-
-        const segments: AnalyzedSegment[] = [];
-
-        // 3. Map to segments
-        // Use originals length as base.
-        // If translation/pronunciation lines mismatch, we fallback to empty or best effort.
-        originals.forEach((orig, index) => {
-            segments.push({
-                original: orig,
-                // If translation lines are fewer or more, try to match by index, else empty
-                translation: translations[index] || "",
-                // Same for pronunciation.
-                pronunciation: pronunciations[index] || ""
-            });
-        });
-
-        // 4. Create/Overwrite Playlist
-        // Warning: This overwrites if exists with same name? Or appends?
-        // User said "create a card list named by this lyrics (title)".
-        // If list exists, maybe we append? Or overwrite? 
-        // Let's Append to avoid data loss, or just Creating implies new check.
-        // If `listName` exists, we add to it.
-
-        if (!playlists.value[listName]) {
-            playlists.value[listName] = [];
-        }
-
-        // Add all segments
-        // Suggest adding to the END or BEGINNING? 
-        // Usually lyrics are sequential, so ORDER matters.
-        // Prepend logic in saveSegment reverses order if we loop.
-        // We should Append them in order.
-        // But `playlists` view might show latest first?
-        // If we want reading order:
-        // Item 0 (First line) should be at Top? Or Bottom?
-        // If standard view is "Latest Card First", then we should push in Reverse Order?
-        // Let's push normally and let UI decide. The `RecentLists` slices 0..3.
-        // `PlaylistDetail` iterates `v-for="segment in playlist"`.
-        // If we want Lyric Line 1 to flow to Line 2, they should be in array order [0, 1, 2].
-
-        playlists.value[listName].push(...segments);
-        playlistTimestamps.value[listName] = Date.now();
-        saveToStorage();
-    };
-
-    const removeSegment = (listName: string, index: number) => {
+    const removeSegment = (listName: string, original: string) => {
         if (playlists.value[listName]) {
-            playlists.value[listName].splice(index, 1); // Remove by index
+            playlists.value[listName] = playlists.value[listName].filter(s => s.original !== original);
             if (playlists.value[listName].length === 0) {
                 delete playlists.value[listName];
                 delete playlistTimestamps.value[listName];
@@ -321,7 +310,6 @@ export const useContentStore = defineStore('content', () => {
         saveSegment,
         removeSegment,
         lastError,
-        lastIdentifiedQuery,
-        createBatchPlaylist
+        lastIdentifiedQuery
     };
 });

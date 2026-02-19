@@ -32872,3 +32872,24 @@
 
 ## 驗收指令
 - [x] 當貼上新歌詞觸發自動辨識時，標題欄位是否顯示為「歌名 (歌手)」的格式？
+
+## 2026-02-19 Batch Lyrics & CORS Fix
+- **Actual Changes**:
+  - Store: implemented createBatchPlaylist to split lyrics by lines after single translation call.
+  - Store: switched iTunes search to use allorigins proxy (solving mobile CORS).
+  - UI: Added "Create List from Lyrics" button in Home.
+  - UI: Fixed save/remove logic to work with new store structure.
+- **Verification**:
+  - Mobile: Check if typing "H" shows song name (CORS fix).
+  - Batch: Paste lyrics, click "Create List", verify playlist created with multiple cards.
+
+
+## 2026-02-19 Revert Proxy & Fix
+- **Actual Changes**:
+  - Reverted iTunes API call to standard  (no proxy, no cors mode) based on user confirmation that it worked on mobile before.
+  - Fixed duplicate export in .
+  - Kept Batch Lyrics Creation feature.
+- **Verification**:
+  - Re-deploy and test mobile identification (should work like 2/17 build).
+  - Verify Batch Creation still works.
+
