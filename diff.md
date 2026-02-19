@@ -447,3 +447,20 @@ cp ./backups/20260219_revert_cors_keep_batch/content.ts frontend/src/stores/cont
 ```
 
 
+# Feature fix-analysis-ts-error 變更記錄
+
+執行時間：Thu Feb 19 23:07:48 CST 2026
+Feature Name：fix-analysis-ts-error
+調整類型：錯誤修復
+備份目錄：N/A (In-place fix)
+
+## 變更摘要
+
+### 修改的檔案
+- frontend/src/views/Analysis.vue
+  - 變更類型：修改
+  - 變更說明：修復 saveSegment 缺少參數的 TS 錯誤
+  - 主要變更：
+    - 傳入 contentStore.currentTitle 作為第二個參數
+    - 確保在儲存前檢查並自動產生標題
+

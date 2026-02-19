@@ -161,7 +161,10 @@ const performAnalysis = async () => {
 
 const saveCurrentSelection = async () => {
   if (currentSelection.value) {
-    await contentStore.saveSegment(currentSelection.value);
+    if (!contentStore.currentTitle) {
+      await identifySource();
+    }
+    contentStore.saveSegment(currentSelection.value, contentStore.currentTitle);
     showTooltip.value = false;
     window.getSelection()?.removeAllRanges();
   }
