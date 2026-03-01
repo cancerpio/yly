@@ -149,19 +149,48 @@ export const useContentStore = defineStore('content', () => {
         }
     };
 
+    // JSONP helper for Apple iTunes API to avoid CORS and Mobile Deep-Link Redirects (musics://)
+    const jsonp = (url: string): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            const script = document.createElement('script');
+
+            const timeoutId = setTimeout(() => {
+                cleanup();
+                reject(new Error('JSONP Request Timeout'));
+            }, 5000);
+
+            const cleanup = () => {
+                clearTimeout(timeoutId);
+                delete (window as any)[callbackName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+            };
+
+            (window as any)[callbackName] = (data: any) => {
+                cleanup();
+                resolve(data);
+            };
+
+            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
+            script.onerror = () => {
+                cleanup();
+                reject(new Error('JSONP Script Load Failed'));
+            };
+
+            document.head.appendChild(script);
+        });
+    };
+
     const fetchItunes = async (query: string) => {
         try {
             const term = encodeURIComponent(query.slice(0, 100));
-            // Revert: Use direct fetch. User confirmed 2/17 build without proxy worked on mobile.
-            // Avoid mode: 'cors' or complex headers which might trigger stricter preflight.
-            const response = await fetch(`https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`);
+            // Use JSONP instead of fetch. iTunes Search API explicitly supports JSONP to bypass CORS.
+            // Furthermore, using JSONP (&callback=) prevents Apple from converting the response
+            // into a 302 redirect to the Apple Music App (musics://) on iOS devices.
+            const url = `https://itunes.apple.com/search?term=${term}&limit=1&media=music&entity=song&country=JP&lang=ja_jp`;
 
-            if (!response.ok) {
-                lastError.value = `HTTP Error: ${response.status}`;
-                return null;
-            }
+            const data = await jsonp(url);
 
-            const data = await response.json();
             if (data.results && data.results.length > 0) {
                 const track = data.results[0];
                 return `${track.trackName} (${track.artistName})`;
@@ -206,10 +235,19 @@ export const useContentStore = defineStore('content', () => {
         const lines = raw.split(/[\n\r]+|\s{2,}/).map(l => l.trim()).filter(l => l.length > 5 && l.length < 100);
 
         if (lines.length > 0) {
-            // Sort by length desc
-            lines.sort((a, b) => b.length - a.length);
+            // Sort by presence of Japanese/Kanji characters first, then by length desc
+            lines.sort((a, b) => {
+                const hasJapanA = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(a) ? 1 : 0;
+                const hasJapanB = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(b) ? 1 : 0;
 
-            // Try top 3 longest lines
+                if (hasJapanA !== hasJapanB) {
+                    return hasJapanB - hasJapanA; // Lines with JP characters get priority
+                }
+                // If both or neither have JP, sort by length
+                return b.length - a.length;
+            });
+
+            // Try top 3 best matching lines
             for (const line of lines.slice(0, 3)) {
                 const name = await fetchItunes(line);
                 if (name) return name;
