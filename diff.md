@@ -464,3 +464,19 @@ Feature Name：fix-analysis-ts-error
     - 傳入 contentStore.currentTitle 作為第二個參數
     - 確保在儲存前檢查並自動產生標題
 
+# Feature revert-corsproxy-keep-jsonp 變更記錄
+
+執行時間：2026-03-01 14:05:00
+Feature Name：revert-corsproxy-keep-jsonp
+調整類型：修改功能
+備份目錄：N/A (使用者自行透過 Git revert)
+
+## 變更摘要
+
+### 修改的檔案
+- `frontend/src/stores/content.ts`
+  - 變更類型：修改
+  - 變更說明：還原 `corsproxy.io` 改動，改回使用 JSONP。
+  - 主要變更：
+    - 因應未來架構調整（將由使用者輸入歌名並透過後端抓取），目前放棄在前端強行突破 iOS 的 `musics://` Deep Link 限制。
+    - 移除 `corsproxy.io`，恢復先前的 JSONP `/ fetch` 實作方式。
