@@ -25,7 +25,7 @@ build/
 *.swo
 
 # Agent
-.agent/
+# .agent/
 node_modules/_*
 
 # internal documents
